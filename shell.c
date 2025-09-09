@@ -4,9 +4,16 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <readline/readline.h>
+#include <signal.h>
+#include <setjmp.h>
 
+static sigjmp_buf env;
+
+void sigint_handler(int s);
 char **get_input(char *i);
 int cd(char *p);
+
+static volatile sig_atomic_t jmp_actice = 0;
 
 int main() {
     pid_t child_pid;
@@ -14,9 +21,21 @@ int main() {
     char **command;
     int stat_loc;
 
+    signal(SIGINT, sigint_handler);
+
     while (1) {
+        if (sigsetjmp(env, 1) == 42)
+            printf("Restart.\n");
+        printf("next iteration...\n");
+        sleep(2);
+
         input = readline("fer-shell > ");
         command = get_input(input);
+
+        if (input == NULL) {
+            printf("\n");
+            exit(0);
+        };
 
         if (strcmp(command[0], "exit") == 0) {
             free(input);
@@ -38,6 +57,8 @@ int main() {
             exit(1);
         };
         if (child_pid == 0) {
+            signal(SIGINT, SIG_DFL);
+
             if (execvp(command[0], command)) {
                 perror(command[0]);
                 exit(1);
@@ -51,6 +72,13 @@ int main() {
     }
 
     return 0;
+}
+
+void sigint_handler(int signo) {
+    if (!jmp_actice)
+        return;
+
+    siglongjmp(env, 42);
 }
 
 int cd(char *path) {
