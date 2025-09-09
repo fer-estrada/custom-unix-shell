@@ -5,7 +5,7 @@ super lightweight shell implementation, for practice
 ## features
  - prompt interface
  - builtin commands (ls, pwd, cd, echo, cat)
- - 3
+ - basic signal handling (Ctrl-C won't end the shell)
  - 4
 
 ## build and run
